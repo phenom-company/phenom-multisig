@@ -119,9 +119,10 @@ contract MultiSigWallet {
 
     
    /**
-    *   @dev Contract constructor sets signers list and required number of confirmations.
+    *   @dev Contract constructor sets signers list, required number of confirmations and name of the wallet.
     *   @param _signers                     signers list
     *   @param _requiredConfirmations       required number of confirmations
+    *   @param _name                        name of the wallet
     */
     constructor(
         address[] _signers, 
@@ -176,7 +177,7 @@ contract MultiSigWallet {
     }
 
    /**
-    *   @dev Allows to sign
+    *   @dev Allows to sign a transaction
     */
     function signTransaction(uint _txId) public  onlySigners {
         require(!transactions[_txId].confirmed[msg.sender] && _txId <= txCount, "must be a valid unsigned tx");
