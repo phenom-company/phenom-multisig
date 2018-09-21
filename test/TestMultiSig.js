@@ -3,6 +3,17 @@ const SimpleToken = artifacts.require('SimpleToken.sol');
 const MultiSigWalletCreator = artifacts.require('MultiSigWalletCreator.sol');
 
 
+async function assertRevert(promise) {
+    try {
+        await promise;
+        assert.fail('Expected revert not received');
+    } catch (error) {
+        const revertFound = error.message.search('revert') >= 0;
+        const invalidOpcodeFound = error.message.search('invalid opcode') >= 0;
+        assert(revertFound || invalidOpcodeFound, `Expected "revert" or "invalid opcode", got ${error} instead`);
+    }
+}
+
 /*
 ====================================================================================================
 MultiSig tests
@@ -70,15 +81,9 @@ Start of testing
             walletInstance = MultiSigWallet.at(walletAddress);
         });
 
-        it('does not allow to set info string anyone but the owner', async () => {
-            try {
-                await factoryInstance.setCurrentSystemInfo(systemInfoString, { from: notSigner });
-            } catch (err) {
-                assert.equal(err.message, 'VM Exception while processing transaction: revert');
-                return;
-            }
-            assert(false, 'system info was changed');
-
+        it('does not allow to set info string anyone but the owner', () => {
+            const promise = factoryInstance.setCurrentSystemInfo(systemInfoString, { from: notSigner });
+            assertRevert(promise);
         });
 
         it('sets proper system info string', async () => {
@@ -125,23 +130,17 @@ Start of testing
         });
 
 
-        it('should allow create transaction only by signers', () => walletInstance.createTransaction(
-            etherReciever,
-            0,
-            web3.toWei(5, 'ether'),
-            {
-                from: notSigner,
-            },
-        )
-            .then(() => {
-                assert(false, 'tx was created by not signer');
-            })
-            .catch((error) => {
-                assert(
-                    error.message == 'VM Exception while processing transaction: revert',
-                    'wrong error message',
-                );
-            }));
+        it('should allow create transaction only by signers', () => {
+            const promise = walletInstance.createTransaction(
+                etherReciever,
+                0,
+                web3.toWei(5, 'ether'),
+                {
+                    from: notSigner,
+                },
+            );
+            assertRevert(promise);
+        });
 
         it('create ether transfer transaction', async () => {
             await walletInstance.createTransaction(
@@ -260,86 +259,56 @@ Start of testing
             tokenTxIndex = tokenTxCreationReceipt.logs[0].args._txId.toNumber();
         });
 
-        it('shouldn\'t allow to sign transaction twice', () => walletInstance.signTransaction(
-            ethTxIndex,
-            {
-                from: signers[0],
-            },
-        )
-            .then(() => {
-                assert(false, 'tx was signed twice');
-            })
-            .catch((error) => {
-                assert(
-                    error.message == 'VM Exception while processing transaction: revert',
-                    'wrong error message',
-                );
-            }));
+        it('shouldn\'t allow to sign transaction twice', () => {
+            const promise = walletInstance.signTransaction(
+                ethTxIndex,
+                {
+                    from: signers[0],
+                },
+            )
+            assertRevert(promise);
+        });
 
 
-        it('shouldn\'t allow to sign transaction only to non signer', () => walletInstance.signTransaction(
-            ethTxIndex,
-            {
-                from: notSigner,
-            },
-        )
-            .then(() => {
-                assert(false, 'tx was signed by not signer');
-            })
-            .catch((error) => {
-                assert(
-                    error.message == 'VM Exception while processing transaction: revert',
-                    'wrong error message',
-                );
-            }));
+        it('shouldn\'t allow to sign transaction only to non signer', () => {
+            const promise = walletInstance.signTransaction(
+                ethTxIndex,
+                {
+                    from: notSigner,
+                },
+            );
+            assertRevert(promise);
+        });
 
-        it('shouldn\'t allow to unsign transaction only to non signer', () => walletInstance.unsignTransaction(
-            ethTxIndex,
-            {
-                from: notSigner,
-            },
-        )
-            .then(() => {
-                assert(false, 'tx was signed by not signer');
-            })
-            .catch((error) => {
-                assert(
-                    error.message == 'VM Exception while processing transaction: revert',
-                    'wrong error message',
-                );
-            }));
+        it('shouldn\'t allow to unsign transaction only to non signer', () => {
+            const promise = walletInstance.unsignTransaction(
+                ethTxIndex,
+                {
+                    from: notSigner,
+                },
+            );
+            assertRevert(promise);
+        });
 
-        it('shouldn\'t allow to sign unexisting transaction', () => walletInstance.signTransaction(
-            nonExistingTxIndex,
-            {
-                from: signers[2],
-            },
-        )
-            .then(() => {
-                assert(false, 'tx was signed by not signer');
-            })
-            .catch((error) => {
-                assert(
-                    error.message == 'VM Exception while processing transaction: revert',
-                    'wrong error message',
-                );
-            }));
+        it('shouldn\'t allow to sign unexisting transaction', () => {
+            const promise = walletInstance.signTransaction(
+                nonExistingTxIndex,
+                {
+                    from: signers[2],
+                },
+            );
+            assertRevert(promise);
+        });
 
-        it('shouldn\'t allow to unsign  unsigned transaction', () => walletInstance.unsignTransaction(
-            ethTxIndex,
-            {
-                from: signers[2],
-            },
-        )
-            .then(() => {
-                assert(false, 'tx was unsigned twice');
-            })
-            .catch((error) => {
-                assert(
-                    error.message == 'VM Exception while processing transaction: revert',
-                    'wrong error message',
-                );
-            }));
+        it('shouldn\'t allow to unsign  unsigned transaction', () => {
+            const promise = walletInstance.unsignTransaction(
+                ethTxIndex,
+                {
+                    from: signers[2],
+                },
+            );
+            assertRevert(promise);
+        });
 
         it('check signing and exectuting ether transfer', async () => {
             const balanceBefore = await web3.eth.getBalance(etherReciever);
@@ -417,37 +386,25 @@ Start of testing
                 // now transaction should be executed
             });
 
-            it('shouldn\'t allow to sign  exectuted transaction', async () => walletInstance.signTransaction(
-                ethTxIndex,
-                {
-                    from: signers[4],
-                },
-            )
-                .then(() => {
-                    assert(false, 'exectuted transaction was signed');
-                })
-                .catch((error) => {
-                    assert(
-                        error.message == 'VM Exception while processing transaction: revert',
-                        'wrong error message',
-                    );
-                }));
+            it('shouldn\'t allow to sign  exectuted transaction', () => {
+                const promise = walletInstance.signTransaction(
+                    ethTxIndex,
+                    {
+                        from: signers[4],
+                    },
+                );
+                assertRevert(promise);
+            });
 
-            it('should not allow to unsign executed transaction', async () => walletInstance.unsignTransaction(
-                ethTxIndex,
-                {
-                    from: signers[0],
-                },
-            )
-                .then(() => {
-                    assert(false, 'exectuted transaction was unsigned');
-                })
-                .catch((error) => {
-                    assert(
-                        error.message == 'VM Exception while processing transaction: revert',
-                        'wrong error message',
-                    );
-                }));
+            it('should not allow to unsign executed transaction', () => {
+                const promise = walletInstance.unsignTransaction(
+                    ethTxIndex,
+                    {
+                        from: signers[0],
+                    },
+                );
+                assertRevert(promise);
+            });
         });
     });
 });
