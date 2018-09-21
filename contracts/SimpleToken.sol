@@ -8,7 +8,7 @@ pragma solidity ^0.4.18;
 
 library SafeMath {
 
-    function mul(uint a, uint b) internal view returns (uint) {
+    function mul(uint a, uint b) internal pure returns (uint) {
         if (a == 0) {
             return 0;
         }
@@ -17,19 +17,19 @@ library SafeMath {
         return c;
     }
 
-    function div(uint a, uint b) internal view returns(uint) {
+    function div(uint a, uint b) internal pure returns(uint) {
         assert(b > 0);
         uint c = a / b;
         assert(a == b * c + a % b);
         return c;
     }
 
-    function sub(uint a, uint b) internal view returns(uint) {
+    function sub(uint a, uint b) internal pure returns(uint) {
         assert(b <= a);
         return a - b;
     }
 
-    function add(uint a, uint b) internal view returns(uint) {
+    function add(uint a, uint b) internal pure returns(uint) {
         uint c = a + b;
         assert(c >= a);
         return c;
@@ -72,14 +72,14 @@ contract SimpleToken is ERC20 {
     
     // Allows execution by the owner only
     modifier onlyOwner { 
-        require(msg.sender == owner); 
+        require(msg.sender == owner, "msg.sender is not owner"); 
         _; 
     }
 
    /**
     *   @dev Contract constructor function sets owner address
     */
-    function SimpleToken() public {
+    constructor() public {
         owner = msg.sender;
     }
 
@@ -89,10 +89,10 @@ contract SimpleToken is ERC20 {
     *   @param _value        number of tokens to issue
     */
     function mintTokens(address _holder, uint _value) external onlyOwner {
-        require(_value > 0);
+        require(_value > 0, "value must be > 0");
         balances[_holder] = balances[_holder].add(_value);
         totalSupply = totalSupply.add(_value);
-        Transfer(0x0, _holder, _value);
+        emit Transfer(0x0, _holder, _value);
     }
 
 
@@ -117,7 +117,7 @@ contract SimpleToken is ERC20 {
     function transfer(address _to, uint _amount) public returns (bool) {
         balances[msg.sender] = balances[msg.sender].sub(_amount);
         balances[_to] = balances[_to].add(_amount);
-        Transfer(msg.sender, _to, _amount);
+        emit Transfer(msg.sender, _to, _amount);
         return true;
     }
 
@@ -135,7 +135,7 @@ contract SimpleToken is ERC20 {
         balances[_from] = balances[_from].sub(_amount);
         allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
         balances[_to] = balances[_to].add(_amount);
-        Transfer(_from, _to, _amount);
+        emit Transfer(_from, _to, _amount);
         return true;
     }
 
@@ -155,9 +155,9 @@ contract SimpleToken is ERC20 {
     *   @return true if the approval was successful
     */
     function approve(address _spender, uint _amount) public returns (bool) {
-        require((_amount == 0) || (allowed[msg.sender][_spender] == 0));
+        require((_amount == 0) || (allowed[msg.sender][_spender] == 0), "amout must be zero or allowed must be zero");
         allowed[msg.sender][_spender] = _amount;
-        Approval(msg.sender, _spender, _amount);
+        emit Approval(msg.sender, _spender, _amount);
         return true;
     }
 

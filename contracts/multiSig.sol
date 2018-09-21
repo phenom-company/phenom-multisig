@@ -132,7 +132,8 @@ contract MultiSigWallet {
     public {
         require( 
             _requiredConfirmations <= _signers.length && 
-            _requiredConfirmations > 0
+            _requiredConfirmations > 0,
+            "required confirmations must be > 0 and less than number of signers"
         );
         requiredConfirmations = _requiredConfirmations;
         for (uint i = 0; i < _signers.length; i++) {
@@ -146,7 +147,7 @@ contract MultiSigWallet {
     *   @dev Fallback function
     */
     function() public payable {
-        require(msg.value > 0);
+        require(msg.value > 0, "value must be > 0");
         emit Deposit(msg.value, msg.sender);
     }
     
@@ -242,13 +243,13 @@ contract MultiSigWallet {
 
     //executing tx
     function _sendTransaction(uint _txId) private {
-        require(!transactions[_txId].done);
+        require(!transactions[_txId].done, "transaction must not be done");
         transactions[_txId].done = true;
         if ( transactions[_txId].tokenAddress == address(0)) {
             transactions[_txId].to.transfer(transactions[_txId].amount);
         } else {
             ERC20 token = ERC20(transactions[_txId].tokenAddress);
-            require(token.transfer(transactions[_txId].to, transactions[_txId].amount));
+            require(token.transfer(transactions[_txId].to, transactions[_txId].amount), "token transfer failded");
         }
         emit TranscationSended(_txId, now);
     }
