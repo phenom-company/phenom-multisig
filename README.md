@@ -49,7 +49,7 @@ Allows to sign a transaction
 ```
 Allows to unsign a transaction
 
-#### getTransactionId
+#### getTransactionsId
 ```
     function getTransactionsId(
         bool _pending, 
